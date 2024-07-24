@@ -1,0 +1,11 @@
+Active Directory’de belirli bir tarihten sonra parolasını değiştirmiş olan kullanıcıları bulmak için PowerShell aşağıda yer almaktadır.
+
+Get-ADUser -Filter{passwordlastset -gt "5/9/2024 09:30:00"} | ft name,samaccountname
+komutunu kullanabilirsiniz. Aşağıda yer alan diğer alternatif scripti kullanabilirsiniz.
+
+$date = Read-Host "Lütfen başlangıç tarihini girin (MM/dd/yyyy HH:mm:ss formatında)"
+$users = Get-ADUser -Filter{passwordlastset -gt $date} -Properties PasswordLastSet | 
+         Select-Object Name, SamAccountName, PasswordLastSet
+
+$users | Format-Table -AutoSize
+$users | Export-Csv -Path "C:\Temp\PasswordChangedUsers.csv" -NoTypeInformation
