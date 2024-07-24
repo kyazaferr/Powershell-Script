@@ -1,0 +1,17 @@
+# İzlenecek portlar
+$Ports = "389", "3268", "53", "135", "88", "445"
+
+# Tüm Domain Controller'ları al
+$AllDCs = Get-ADDomainController -Filter * | Select-Object Hostname, Ipv4address
+
+# Her bir Domain Controller ve port için bağlantıyı test et
+foreach ($DC in $AllDCs) {
+    foreach ($P in $Ports) {
+        $check = Test-NetConnection $DC.Ipv4address -Port $P -WarningAction SilentlyContinue
+        if ($check.TcpTestSucceeded -eq $true) {
+            Write-Host "$($DC.Hostname) üzerinde $P portuna başarıyla bağlantı sağlandı." -ForegroundColor Green
+        } else {
+            Write-Host "$($DC.Hostname) üzerinde $P portuna bağlantı sağlanamadı." -ForegroundColor Red
+        }
+    }
+}
