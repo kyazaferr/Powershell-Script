@@ -1,0 +1,49 @@
+Bu script, aşağıdaki görevleri yerine getirir:
+Belirli aralıklarla Domain Admins grubunun üyelerini kontrol eder.
+Yeni bir üye eklendiğinde tespit eder.
+Yeni üye eklendiğinde belirlenen e-posta adresine bildirim gönderir.
+
+
+# SMTP Ayarları
+$smtpServer = "Smpt.kayasystem.com"
+$smtpFrom = "ADSecurity@kayasystem.com"
+$smtpTo = "zafer@kayasystem.com"
+$smtpSubject = "Domain Admins Grubuna Yeni Kullanıcı Eklendi"
+$smtpBody = "Domain Admins grubuna yeni bir kullanıcı eklendi."
+$smtpUsername = "smtp_username"
+$smtpPassword = "smtp_password"
+
+# Kontrol Süresi (Saniye)
+$interval = 60  # 1 dakika
+
+# Domain Admins Grubunun DistinguishedName'i
+$domainAdminsGroupDN = "CN=Domain Admins,CN=Group,DC=kayasystem,DC=com"
+
+# İlk Üye Listesini Al
+$initialMembers = Get-ADGroupMember -Identity $domainAdminsGroupDN
+
+while ($true) {
+    Start-Sleep -Seconds $interval
+    
+    # Güncel Üye Listesini Al
+    $currentMembers = Get-ADGroupMember -Identity $domainAdminsGroupDN
+
+    # Yeni Üyeleri Bul
+    $newMembers = Compare-Object -ReferenceObject $initialMembers -DifferenceObject $currentMembers -Property SamAccountName | Where-Object { $_.SideIndicator -eq "=>" }
+    
+    if ($newMembers) {
+        # Yeni Üye Bulunduğunda E-posta Gönder
+        $message = New-Object system.net.mail.mailmessage
+        $message.from = $smtpFrom
+        $message.To.add($smtpTo)
+        $message.Subject = $smtpSubject
+        $message.Body = $smtpBody + "`nYeni Üyeler:`n" + ($newMembers | ForEach-Object { $_.SamAccountName } | Out-String)
+        
+        $smtp = New-Object Net.Mail.SmtpClient($smtpServer)
+        $smtp.Credentials = New-Object System.Net.NetworkCredential($smtpUsername, $smtpPassword)
+        $smtp.Send($message)
+
+        # Üye Listesini Güncelle
+        $initialMembers = $currentMembers
+    }
+}
