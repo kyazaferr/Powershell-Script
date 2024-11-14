@@ -1,0 +1,39 @@
+IoC Hash Değerleri Sorgulamak için kullanılan bir powershell script örneğini paylaşıyorum.
+
+# Sunucu listesini içeren bir dosyanın yolunu belirtin veya doğrudan dizi olarak tanımlayın
+$sunucuListesiDosyaYolu = "C:\Scripts\IOC\Servers.txt"
+$sunucular = Get-Content $sunucuListesiDosyaYolu
+
+# IOC'lerin hash değerlerini ve karşılık gelen dosya adlarını bir hash tablosunda depolayın
+$IOCs = @{
+    "341352643634634634745dvzxadg452535135351353525rafdzvzdfaefgrhty4" = "***.exe"
+    "341352643634634634745dvzxadg452535135351353525rafdzvzdfaefgrhty4" = "***.exe"
+    "341352643634634634745dvzxadg452535135351353525rafdzvzdfaefgrhty4" = "***.sys"
+    "341352643634634634745dvzxadg452535135351353525rafdzvzdfaefgrhty4" = "***.exe"
+   
+}
+
+# Çıktıyı saklamak için boş bir dizi oluştur
+$output = @()
+
+foreach ($sunucu in $sunucular) {
+    foreach ($iocHash in $IOCs.Keys) {
+        try {
+            $dosyaYolu = "\\$sunucu\C$\Windows\System32\$($IOCs[$iocHash])"
+            $hash = Get-FileHash -Path $dosyaYolu -Algorithm SHA256 -ErrorAction Stop
+            if ($hash.Hash -eq $iocHash) {
+                # Eşleşen dosya bilgisini çıktı dizisine ekleyin
+                $output += [PSCustomObject]@{
+                    "Sunucu" = $sunucu
+                    "DosyaAdi" = $IOCs[$iocHash]
+                    "DosyaYolu" = $dosyaYolu
+                }
+            }
+        } catch {
+            Write-Host "Hata: $_" -ForegroundColor Red
+        }
+    }
+}
+
+# CSV dosyasına çıktıyı yazdırın
+$output | Export-Csv -Path "C:\output.csv" -NoTypeInformation
