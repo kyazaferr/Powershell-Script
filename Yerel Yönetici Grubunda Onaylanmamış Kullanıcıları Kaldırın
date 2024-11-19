@@ -1,0 +1,8 @@
+ #Approveduserslist
+$approvedAdmins = @("Administrator", "DomainAdminAccount","Domain Admins")
+$currentAdmins = Get-LocalGroupMember -Group "Administrators" | Where-Object { $_.ObjectClass -eq "User" }
+foreach ($admin in $currentAdmins) {
+ if ($approvedAdmins -notcontains $admin.Name) {
+ Remove-LocalGroupMember -Group "Administrators" -Member $admin.Name
+ }
+}
