@@ -1,0 +1,33 @@
+# SAMAccountName ile kullanıcıyı belirtin
+$targetUser = "SBPadmin10"
+
+# Kullanıcının AD'deki DistinguishedName'ini al
+try {
+    $userDN = (Get-ADUser -Identity $targetUser).DistinguishedName
+}
+catch {
+    Write-Host "Kullanıcı '$targetUser' bulunamadı. Lütfen doğru yazıldığından emin olun." -ForegroundColor Red
+    return
+}
+
+# Kullanıcı nesnesinin ACL'sini al
+$acl = Get-Acl -Path "AD:\$userDN"
+
+# Inheritance durumunu kontrol et
+$inheritanceDisabled = $acl.AreAccessRulesProtected
+
+if ($inheritanceDisabled) {
+    Write-Host "⚠ Inheritance (devralma) BU kullanıcı için DEVRE DIŞI bırakılmış!" -ForegroundColor Yellow
+} else {
+    Write-Host "✅ Inheritance (devralma) bu kullanıcı için ETKİN." -ForegroundColor Green
+}
+
+# Yetki listesini detaylı göster
+$acl.Access | Select-Object `
+    IdentityReference, `
+    ActiveDirectoryRights, `
+    AccessControlType, `
+    IsInherited, `
+    ObjectType, `
+    InheritanceType |
+    Out-GridView -Title "Kullanıcı Yetki Listesi: $targetUser"
